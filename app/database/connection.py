@@ -13,19 +13,23 @@ db = Database()
 
 async def get_database():
     if db.database is None:
-        logger.error("Database not connected. Call connect_to_mongo() first.")
-        raise RuntimeError("Database connection not established")
+        logger.warning("Database not connected. Attempting to connect...")
+        try:
+            await connect_to_mongo()
+        except Exception as e:
+            logger.error(f"Failed to connect to database: {e}")
+            raise RuntimeError("Database connection not established")
     return db.database
 
 async def connect_to_mongo():
     """Create database connection using Motor only with extended timeouts"""
-    try:
-        MONGODB_URL = os.getenv("MONGODB_URL")
-        DATABASE_NAME = os.getenv("DATABASE_NAME", "ecommerce_db")
+    if db.database is not None:
+        logger.info("Database already connected")
+        return
         
-        if not MONGODB_URL:
-            logger.error("MONGODB_URL environment variable not set")
-            raise ValueError("MONGODB_URL environment variable is required")
+    try:
+        MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+        DATABASE_NAME = os.getenv("DATABASE_NAME", "ecommerce_db")
         
         logger.info(f"Connecting to MongoDB at {MONGODB_URL}...")
         
