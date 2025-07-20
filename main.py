@@ -8,8 +8,9 @@ import os
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    await connect_to_mongo()
+    # Startup - but keep it minimal for serverless
     yield
+    # Shutdown
     await close_mongo_connection()
 
 app = FastAPI(
@@ -38,11 +39,6 @@ async def root():
 @app.get("/health")
 async def health_check():
     return {"status": "healthy", "environment": "production"}
-
-@app.on_event("startup")
-async def startup_event():
-    await connect_to_mongo()
-
 
 if __name__ == "__main__":
     import uvicorn

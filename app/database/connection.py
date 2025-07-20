@@ -5,76 +5,74 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
-class Database:
-    client: AsyncIOMotorClient = None
-    database = None
-    _lock = None
-
-    def __init__(self):
-        self._lock = asyncio.Lock()
-
-db = Database()
+# Remove global database instance for serverless compatibility
+_client_cache = {}
 
 async def get_database():
-    if db.database is None:
-        async with db._lock:
-            if db.database is None:  # Double-check locking
-                logger.warning("Database not connected. Attempting to connect...")
-                try:
-                    await connect_to_mongo()
-                except Exception as e:
-                    logger.error(f"Failed to connect to database: {e}")
-                    raise RuntimeError("Database connection not established")
-    return db.database
-
-async def connect_to_mongo():
-    """Create database connection using Motor only with extended timeouts"""
+    """Get database connection, creating a new one if needed for serverless compatibility"""
     try:
-        # Reset any existing connection
-        if db.client:
-            db.client.close()
-            db.client = None
-            db.database = None
+        # Get current event loop ID to ensure we use the right client
+        loop_id = id(asyncio.get_running_loop())
         
-        MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+        # Check if we have a client for this event loop
+        if loop_id not in _client_cache or _client_cache[loop_id] is None:
+            await _create_connection_for_loop(loop_id)
+        
+        return _client_cache[loop_id]['database']
+    except Exception as e:
+        logger.error(f"Failed to get database: {e}")
+        raise RuntimeError("Database connection not established")
+
+async def _create_connection_for_loop(loop_id):
+    """Create a new connection for the current event loop"""
+    try:
+        MONGODB_URL = os.getenv("MONGODB_URL")
         DATABASE_NAME = os.getenv("DATABASE_NAME", "ecommerce_db")
         
-        logger.info(f"Connecting to MongoDB at {MONGODB_URL}...")
+        logger.info(f"Creating new MongoDB connection for loop {loop_id}")
         
-        # Create new client with current event loop
-        db.client = AsyncIOMotorClient(
+        # Create new client with serverless-optimized configuration
+        client = AsyncIOMotorClient(
             MONGODB_URL,
-            serverSelectionTimeoutMS=10000,  # Reduced timeout for faster feedback
-            connectTimeoutMS=10000,          
-            socketTimeoutMS=10000,           
-            maxPoolSize=5,                   # Reduced pool size
-            maxIdleTimeMS=30000,            
-            heartbeatFrequencyMS=10000,     
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=5000,          
+            socketTimeoutMS=5000,           
+            maxPoolSize=1,  # Single connection for serverless
+            minPoolSize=0,
+            maxIdleTimeMS=10000,
         )
         
-        # Test the connection with shorter timeout
-        await asyncio.wait_for(db.client.admin.command('ping'), timeout=10.0)
+        # Test the connection
+        await client.admin.command('ping')
         
-        db.database = db.client[DATABASE_NAME]
+        database = client[DATABASE_NAME]
+        
+        # Store in cache for this event loop
+        _client_cache[loop_id] = {
+            'client': client,
+            'database': database
+        }
+        
         logger.info(f"Successfully connected to MongoDB database: {DATABASE_NAME}")
         
-    except asyncio.TimeoutError:
-        logger.error("MongoDB connection timed out")
-        db.client = None
-        db.database = None
-        raise
     except Exception as e:
         logger.error(f"Error connecting to MongoDB: {e}")
-        db.client = None
-        db.database = None
+        _client_cache[loop_id] = None
         raise
 
+async def connect_to_mongo():
+    """Create database connection - simplified for serverless"""
+    loop_id = id(asyncio.get_running_loop())
+    await _create_connection_for_loop(loop_id)
+
 async def close_mongo_connection():
-    """Close database connection"""
+    """Close database connections for all event loops"""
     try:
-        if db.client:
-            db.client.close()
-            logger.info("Disconnected from MongoDB")
+        for loop_id, connection_info in _client_cache.items():
+            if connection_info and connection_info['client']:
+                connection_info['client'].close()
+        _client_cache.clear()
+        logger.info("Disconnected from MongoDB")
     except Exception as e:
         logger.error(f"Error disconnecting from MongoDB: {e}")
 

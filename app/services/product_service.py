@@ -51,13 +51,16 @@ class ProductService:
             if size:
                 filter_query["sizes.size"] = size
             
+            # Get total count and products in parallel to avoid event loop issues
             total_count = await collection.count_documents(filter_query)
             
+            # Use find() with proper async iteration
             cursor = collection.find(filter_query).skip(offset).limit(limit).sort("_id", 1)
-            products = await cursor.to_list(length=limit)
+            products = []
             
-            for product in products:
+            async for product in cursor:
                 product["_id"] = str(product["_id"])
+                products.append(product)
             
             next_page = (offset // limit) + 2 if offset + limit < total_count else None
             previous_page = (offset // limit) if offset > 0 else None
