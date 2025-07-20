@@ -72,6 +72,8 @@ DATABASE_NAME=ecommerce_db
 ```bash
 python main.py
 ```
+`
+**Note**: The application will automatically connect to MongoDB on startup. Ensure MongoDB is running and accessible before starting the application.
 
 The API will be available at `http://localhost:8000`
 

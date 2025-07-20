@@ -42,6 +42,10 @@ async def root():
 async def health_check():
     return {"status": "healthy", "environment": "production"}
 
+@app.on_event("startup")
+async def startup_event():
+    await connect_to_mongo()
+
 
 if __name__ == "__main__":
     import uvicorn
