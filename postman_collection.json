@@ -1,0 +1,272 @@
+{
+  "info": {
+    "name": "Ecommerce FastAPI Backend",
+    "description": "Complete API collection for testing the FastAPI ecommerce backend",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Premium T-Shirt\",\n  \"price\": 29.99,\n  \"sizes\": [\n    {\n      \"size\": \"S\",\n      \"quantity\": 10\n    },\n    {\n      \"size\": \"M\",\n      \"quantity\": 15\n    },\n    {\n      \"size\": \"L\",\n      \"quantity\": 8\n    },\n    {\n      \"size\": \"XL\",\n      \"quantity\": 5\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "description": "Create a new product with sizes and quantities"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Product - Jeans",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Blue Jeans\",\n  \"price\": 79.99,\n  \"sizes\": [\n    {\n      \"size\": \"28\",\n      \"quantity\": 12\n    },\n    {\n      \"size\": \"30\",\n      \"quantity\": 18\n    },\n    {\n      \"size\": \"32\",\n      \"quantity\": 14\n    },\n    {\n      \"size\": \"34\",\n      \"quantity\": 9\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "description": "Create another product for testing"
+          },
+          "response": []
+        },
+        {
+          "name": "List All Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"]
+            },
+            "description": "Get all products without filters"
+          },
+          "response": []
+        },
+        {
+          "name": "List Products - Filter by Name",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?name=shirt",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "shirt"
+                }
+              ]
+            },
+            "description": "Filter products by name (partial search)"
+          },
+          "response": []
+        },
+        {
+          "name": "List Products - Filter by Size",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?size=L",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "size",
+                  "value": "L"
+                }
+              ]
+            },
+            "description": "Filter products that have size L available"
+          },
+          "response": []
+        },
+        {
+          "name": "List Products - With Pagination",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/products?limit=5&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["products"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Get products with pagination (5 items per page)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Orders",
+      "item": [
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user_123\",\n  \"items\": [\n    {\n      \"productId\": \"{{productId1}}\",\n      \"qty\": 2\n    },\n    {\n      \"productId\": \"{{productId2}}\",\n      \"qty\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"]
+            },
+            "description": "Create a new order. Replace {{productId1}} and {{productId2}} with actual product IDs from created products"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Order - Single Item",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user_456\",\n  \"items\": [\n    {\n      \"productId\": \"{{productId1}}\",\n      \"qty\": 3\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders"]
+            },
+            "description": "Create order with single item"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Orders - user_123",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/user_123",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "user_123"]
+            },
+            "description": "Get all orders for user_123"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Orders - user_456",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/user_456",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "user_456"]
+            },
+            "description": "Get all orders for user_456"
+          },
+          "response": []
+        },
+        {
+          "name": "Get User Orders - With Pagination",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/orders/user_123?limit=5&offset=0",
+              "host": ["{{baseUrl}}"],
+              "path": ["orders", "user_123"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            },
+            "description": "Get user orders with pagination"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/",
+          "host": ["{{baseUrl}}"],
+          "path": [""]
+        },
+        "description": "Health check endpoint"
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "productId1",
+      "value": "REPLACE_WITH_ACTUAL_PRODUCT_ID",
+      "type": "string"
+    },
+    {
+      "key": "productId2",
+      "value": "REPLACE_WITH_ACTUAL_PRODUCT_ID",
+      "type": "string"
+    }
+  ]
+}
