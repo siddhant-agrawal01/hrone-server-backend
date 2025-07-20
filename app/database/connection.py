@@ -1,6 +1,7 @@
 import os
 from motor.motor_asyncio import AsyncIOMotorClient
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -11,15 +12,22 @@ class Database:
 db = Database()
 
 async def get_database():
+    if db.database is None:
+        logger.error("Database not connected. Call connect_to_mongo() first.")
+        raise RuntimeError("Database connection not established")
     return db.database
 
 async def connect_to_mongo():
     """Create database connection using Motor only with extended timeouts"""
     try:
-        MONGODB_URL = os.getenv("MONGODB_URL", "mongodb://localhost:27017")
+        MONGODB_URL = os.getenv("MONGODB_URL")
         DATABASE_NAME = os.getenv("DATABASE_NAME", "ecommerce_db")
         
-        logger.info("Connecting to MongoDB...")
+        if not MONGODB_URL:
+            logger.error("MONGODB_URL environment variable not set")
+            raise ValueError("MONGODB_URL environment variable is required")
+        
+        logger.info(f"Connecting to MongoDB at {MONGODB_URL}...")
         
         # Extended connection settings for Vercel deployment
         db.client = AsyncIOMotorClient(
@@ -28,22 +36,25 @@ async def connect_to_mongo():
             connectTimeoutMS=30000,          # 30 seconds
             socketTimeoutMS=30000,           # 30 seconds
             maxPoolSize=10,                  # Maximum connection pool size
-            # minPoolSize=1,                   # Minimum connection pool size
             maxIdleTimeMS=45000,            # 45 seconds
-            # waitQueueTimeoutMS=10000,       # 10 seconds
-            # retryWrites=True,               # Enable retry writes
-            # retryReads=True,                # Enable retry reads
             heartbeatFrequencyMS=10000,     # 10 seconds heartbeat
         )
         
-        db.database = db.client[DATABASE_NAME]
-        
         # Test the connection with extended timeout
-        await db.client.admin.command('ping')
-        logger.info("Successfully connected to MongoDB!")
+        await asyncio.wait_for(db.client.admin.command('ping'), timeout=30.0)
         
+        db.database = db.client[DATABASE_NAME]
+        logger.info(f"Successfully connected to MongoDB database: {DATABASE_NAME}")
+        
+    except asyncio.TimeoutError:
+        logger.error("MongoDB connection timed out")
+        db.client = None
+        db.database = None
+        raise
     except Exception as e:
         logger.error(f"Error connecting to MongoDB: {e}")
+        db.client = None
+        db.database = None
         raise
 
 async def close_mongo_connection():
@@ -58,4 +69,6 @@ async def close_mongo_connection():
 async def get_collection(collection_name: str):
     """Get a collection from the database"""
     database = await get_database()
+    if database is None:
+        raise RuntimeError("Database connection not available")
     return database[collection_name]
