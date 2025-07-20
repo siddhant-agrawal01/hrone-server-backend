@@ -54,15 +54,22 @@ async def get_user_orders(
 ):
     """Get orders for a specific user with pagination"""
     try:
+        logger.info(f"Fetching orders for user: {user_id}, limit: {limit}, offset: {offset}")
+        
         result = await OrderService.get_user_orders(
             user_id=user_id,
             limit=limit,
             offset=offset
         )
+        
+        logger.info(f"Successfully retrieved {len(result.get('data', []))} orders for user {user_id}")
         return result
+        
     except Exception as e:
-        logger.error(f"Error getting user orders: {e}")
+        logger.error(f"Error getting user orders for user {user_id}: {e}")
+        logger.error(f"Error type: {type(e).__name__}")
+        logger.error(f"Error details: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to retrieve orders"
+            detail=f"Failed to retrieve orders: {str(e)}"
         )

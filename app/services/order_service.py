@@ -87,21 +87,43 @@ class OrderService:
             
             formatted_orders = []
             for order in orders:
-                formatted_items = []
-                for item in order["items"]:
-                    formatted_items.append({
-                        "productDetails": {
-                            "name": item["name"],
-                            "id": item["productId"]
-                        },
-                        "qty": item["qty"]
+                try:
+                    formatted_items = []
+                    items = order.get("items", [])
+                    
+                    for item in items:
+                        # Handle different possible field structures
+                        product_id = item.get("productId") or item.get("product_id")
+                        product_name = item.get("name") or item.get("product_name", "Unknown Product")
+                        qty = item.get("qty", 1)
+                        
+                        if product_id:
+                            formatted_items.append({
+                                "productDetails": {
+                                    "name": product_name,
+                                    "id": str(product_id)
+                                },
+                                "qty": qty
+                            })
+                        else:
+                            logger.warning(f"Order {order.get('_id')} has item without productId: {item}")
+                    
+                    # Handle different possible total amount field names
+                    total_amount = order.get("totalAmount") or order.get("total", 0)
+                    
+                    formatted_orders.append({
+                        "_id": str(order["_id"]),
+                        "userId": order.get("userId", user_id),
+                        "items": formatted_items,
+                        "totalAmount": total_amount,
+                        "createdAt": order.get("createdAt"),
+                        "status": order.get("status", "created")
                     })
-                
-                formatted_orders.append({
-                    "_id": str(order["_id"]),
-                    "items": formatted_items,
-                    "total": order.get("totalAmount", order.get("total", 0))
-                })
+                    
+                except Exception as item_error:
+                    logger.error(f"Error processing order {order.get('_id', 'unknown')}: {item_error}")
+                    # Skip this order but continue with others
+                    continue
             
             next_page = (offset // limit) + 2 if offset + limit < total_count else None
             previous_page = (offset // limit) if offset > 0 else None
@@ -120,5 +142,6 @@ class OrderService:
             }
             
         except Exception as e:
-            logger.error(f"Error getting user orders: {e}")
+            logger.error(f"Error getting user orders for user {user_id}: {e}")
+            logger.error(f"Error details: {type(e).__name__}: {str(e)}")
             raise

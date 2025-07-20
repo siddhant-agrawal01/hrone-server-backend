@@ -60,11 +60,13 @@ class OrderResponseSchema(BaseModel):
     id: str = Field(alias="_id")
     userId: str
     items: List[OrderItemResponseSchema]
-    totalAmount: float = Field(alias="total")
-    createdAt: datetime
+    totalAmount: float
+    createdAt: Optional[datetime] = None
+    status: Optional[str] = "created"
 
     class Config:
         populate_by_name = True
+        allow_population_by_field_name = True
         json_encoders = {bson.ObjectId: str}
 
 class OrderListResponseSchema(BaseModel):
