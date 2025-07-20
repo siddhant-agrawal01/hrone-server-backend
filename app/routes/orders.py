@@ -6,22 +6,37 @@ from app.schemas.schemas import (
     OrderResponseSchema
 )
 from app.services.order_service import OrderService
+from pydantic import ValidationError
 import logging
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=OrderResponseSchema, status_code=status.HTTP_201_CREATED)
 async def create_order(order: OrderCreateSchema):
     """Create a new order"""
     try:
-        order_id = await OrderService.create_order(order)
-        return {"id": order_id}
+        order_data = await OrderService.create_order(order)
+        return order_data
     except ValueError as e:
+        error_msg = str(e)
+        if "not found" in error_msg:
+            logger.error(f"Product not found error creating order: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=str(e)
+            )
+        else:
+            logger.error(f"Validation error creating order: {e}")
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=str(e)
+            )
+    except ValidationError as e:
         logger.error(f"Validation error creating order: {e}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=str(e)
         )
     except Exception as e:

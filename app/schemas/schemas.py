@@ -1,24 +1,33 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from typing import List, Optional
 import bson
+from datetime import datetime
 
 class SizeSchema(BaseModel):
     size: str
     quantity: int = Field(ge=0)
 
 class ProductCreateSchema(BaseModel):
-    name: str
+    name: str = Field(..., min_length=1)
     price: float = Field(gt=0)
-    sizes: List[SizeSchema]
+    sizes: List[SizeSchema] = Field(..., min_items=1)
+    
+    @validator('name')
+    def name_must_not_be_empty(cls, v):
+        if not v or not v.strip():
+            raise ValueError('Name cannot be empty')
+        return v.strip()
 
 class ProductResponseSchema(BaseModel):
     id: str = Field(alias="_id")
     name: str
     price: float
     sizes: List[SizeSchema] = []
+    createdAt: Optional[datetime] = None
 
     class Config:
         populate_by_name = True
+        allow_population_by_field_name = True
         json_encoders = {bson.ObjectId: str}
 
 class ProductListResponseSchema(BaseModel):
@@ -30,8 +39,14 @@ class OrderItemSchema(BaseModel):
     qty: int = Field(gt=0)
 
 class OrderCreateSchema(BaseModel):
-    userId: str
-    items: List[OrderItemSchema]
+    userId: str = Field(..., min_length=1)
+    items: List[OrderItemSchema] = Field(..., min_items=1)
+    
+    @validator('userId')
+    def user_id_must_not_be_empty(cls, v):
+        if not v or not v.strip():
+            raise ValueError('User ID cannot be empty')
+        return v.strip()
 
 class ProductDetailsSchema(BaseModel):
     name: str
@@ -43,8 +58,10 @@ class OrderItemResponseSchema(BaseModel):
 
 class OrderResponseSchema(BaseModel):
     id: str = Field(alias="_id")
+    userId: str
     items: List[OrderItemResponseSchema]
-    total: float
+    totalAmount: float = Field(alias="total")
+    createdAt: datetime
 
     class Config:
         populate_by_name = True

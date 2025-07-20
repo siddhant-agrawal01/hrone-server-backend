@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 class OrderService:
     
     @staticmethod
-    async def create_order(order_data: OrderCreateSchema) -> str:
-        """Create a new order"""
+    async def create_order(order_data: OrderCreateSchema) -> Dict[str, Any]:
+        """Create a new order and return full order details"""
         try:
             collection = await get_collection("orders")
             
@@ -37,13 +37,32 @@ class OrderService:
             order_dict = {
                 "userId": order_data.userId,
                 "items": validated_items,
-                "total": total_amount,
+                "totalAmount": total_amount,
                 "createdAt": datetime.utcnow(),
                 "status": "created"
             }
             
             result = await collection.insert_one(order_dict)
-            return str(result.inserted_id)
+            
+            created_order = await collection.find_one({"_id": result.inserted_id})
+            
+            formatted_items = []
+            for item in created_order["items"]:
+                formatted_items.append({
+                    "productDetails": {
+                        "name": item["name"],
+                        "id": item["productId"]
+                    },
+                    "qty": item["qty"]
+                })
+            
+            return {
+                "id": str(created_order["_id"]),
+                "userId": created_order["userId"],
+                "items": formatted_items,
+                "totalAmount": created_order["totalAmount"],
+                "createdAt": created_order["createdAt"]
+            }
             
         except Exception as e:
             logger.error(f"Error creating order: {e}")
@@ -81,16 +100,17 @@ class OrderService:
                 formatted_orders.append({
                     "_id": str(order["_id"]),
                     "items": formatted_items,
-                    "total": order["total"]
+                    "total": order.get("totalAmount", order.get("total", 0))
                 })
             
-            next_offset = offset + limit if offset + limit < total_count else None
-            previous_offset = offset - limit if offset > 0 else None
+            next_page = (offset // limit) + 2 if offset + limit < total_count else None
+            previous_page = (offset // limit) if offset > 0 else None
             
             page_info = {
-                "next": next_offset,
-                "previous": previous_offset,
+                "next": next_page,
+                "previous": previous_page,
                 "limit": limit,
+                "offset": offset,
                 "total": total_count
             }
             

@@ -8,10 +8,8 @@ import os
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Startup
     await connect_to_mongo()
     yield
-    # Shutdown
     await close_mongo_connection()
 
 app = FastAPI(
@@ -21,7 +19,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -36,7 +33,7 @@ app.include_router(orders_router, prefix="/orders", tags=["orders"])
 
 @app.get("/")
 async def root():
-    return {"message": "Welcome to Ecommerce API - Deployed on Vercel!"}
+    return {"message": "Welcome to Ecommerce API - Siddhant Agrawal"}
 
 @app.get("/health")
 async def health_check():

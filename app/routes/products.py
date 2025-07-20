@@ -6,6 +6,7 @@ from app.schemas.schemas import (
     ProductResponseSchema
 )
 from app.services.product_service import ProductService
+from pydantic import ValidationError
 import logging
 
 logger = logging.getLogger(__name__)
@@ -16,8 +17,19 @@ router = APIRouter()
 async def create_product(product: ProductCreateSchema):
     """Create a new product"""
     try:
-        product_id = await ProductService.create_product(product)
-        return {"id": product_id}
+        product_data = await ProductService.create_product(product)
+        
+        if "_id" in product_data:
+            product_data["id"] = product_data["_id"]
+            del product_data["_id"]
+        
+        return product_data
+    except ValidationError as e:
+        logger.error(f"Validation error creating product: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(e)
+        )
     except Exception as e:
         logger.error(f"Error creating product: {e}")
         raise HTTPException(

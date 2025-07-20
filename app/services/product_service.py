@@ -4,21 +4,29 @@ from app.database.connection import get_collection
 from app.schemas.schemas import ProductCreateSchema, ProductResponseSchema
 import re
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 class ProductService:
     
     @staticmethod
-    async def create_product(product_data: ProductCreateSchema) -> str:
-        """Create a new product"""
+    async def create_product(product_data: ProductCreateSchema) -> Dict[str, Any]:
+        """Create a new product and return full product details"""
         try:
             collection = await get_collection("products")
             
             product_dict = product_data.dict()
+            product_dict["createdAt"] = datetime.utcnow()
             
             result = await collection.insert_one(product_dict)
-            return str(result.inserted_id)
+            
+            created_product = await collection.find_one({"_id": result.inserted_id})
+            
+            created_product["id"] = str(created_product["_id"])
+            del created_product["_id"]
+            
+            return created_product
             
         except Exception as e:
             logger.error(f"Error creating product: {e}")
@@ -51,13 +59,14 @@ class ProductService:
             for product in products:
                 product["_id"] = str(product["_id"])
             
-            next_offset = offset + limit if offset + limit < total_count else None
-            previous_offset = offset - limit if offset > 0 else None
+            next_page = (offset // limit) + 2 if offset + limit < total_count else None
+            previous_page = (offset // limit) if offset > 0 else None
             
             page_info = {
-                "next": next_offset,
-                "previous": previous_offset,
+                "next": next_page,
+                "previous": previous_page,
                 "limit": limit,
+                "offset": offset,
                 "total": total_count
             }
             
