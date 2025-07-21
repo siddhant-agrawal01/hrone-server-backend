@@ -77,10 +77,7 @@ python main.py
 
 The API will be available at `http://localhost:8000`
 
-### 5. API Documentation
 
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
 
 ## API Usage Examples
 
