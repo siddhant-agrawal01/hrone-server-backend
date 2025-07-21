@@ -1,6 +1,6 @@
 # Ecommerce FastAPI Backend
 
-A professional FastAPI-based ecommerce backend with MongoDB integration, built like a senior developer would structure it.
+A professional FastAPI-based ecommerce backend with MongoDB integration.
 
 ## Features
 
